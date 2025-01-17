@@ -4,9 +4,21 @@ contract Ownership{
 
     address owner = msg.sender;
 
+    // function not needed at all
     function Owner() public{
         owner = msg.sender;
     }
+
+    modifier isOwner(){
+        require(owner == msg.sender);
+        _;
+    }
+}
+
+// Fixed Contract
+contract Ownership{
+
+    address owner = msg.sender;
 
     modifier isOwner(){
         require(owner == msg.sender);
