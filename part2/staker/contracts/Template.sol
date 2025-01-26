@@ -10,6 +10,17 @@ contract MockERC20 is ERC20 {
     function mint(address _to, uint256 _amount) external {
         _mint(_to, _amount);
     }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public override returns(bool) {
+        address spender = msg.sender;
+        // _spendAllowance(from, spender, amount); // allowance disabled
+        _transfer(from, to, amount);
+        return true;
+    }
 }
 
 // We are using an external testing methodology
@@ -22,6 +33,8 @@ contract EchidnaTemplate {
     constructor() {
         tokenToStake = new MockERC20("Token", "TOK");
         stakerContract = new Staker(address(tokenToStake));
+
+        tokenToStake.mint(address(this), type(uint128).max);
     }
 
     // function-level invariants
@@ -33,9 +46,13 @@ contract EchidnaTemplate {
         // State before the "action"
         uint256 preStakedBalance = stakerContract.stakedBalances(address(this));
         // Action
-        uint256 stakedAmount = stakerContract.stake(amount);
-        // Post-condition
-        assert(stakerContract.stakedBalances(address(this)) == preStakedBalance + stakedAmount); 
+        try stakerContract.stake(amount) returns(uint256 stakedAmount) {
+            // Post-condition
+            assert(stakerContract.stakedBalances(address(this)) == preStakedBalance + stakedAmount); 
+        } catch (bytes memory err) {
+            // Post-condition
+            assert(false);
+        }
     }
 
     function testUnstake(uint256 _stakedAmount) public {
